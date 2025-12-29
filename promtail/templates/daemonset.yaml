@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: {{ include "promtail.fullname" . }}
+  labels:
+    {{- include "promtail.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      app: {{ include "promtail.name" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "promtail.name" . }}
+        {{- with .Values.podLabels }}
+        {{ toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      serviceAccountName: {{ .Values.rbac.serviceAccountName }}
+      containers:
+        - name: promtail
+          image: grafana/promtail:2.9.0
+          args:
+            - -config.file=/etc/promtail/promtail.yaml
+          volumeMounts:
+            - name: config
+              mountPath: /etc/promtail
+            - name: varlog
+              mountPath: /var/log
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "promtail.fullname" . }}-config
+        - name: varlog
+          hostPath:
+            path: /var/log

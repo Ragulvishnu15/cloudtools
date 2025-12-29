@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ghost-config
+  namespace: ghost-blog
+data:
+  database__client: "mysql"
+  database__connection__host: "mysql"  # Change from "ghost-mysql" to "mysql"
+  database__connection__user: "ghost"
+  database__connection__password: "ghostpassword"
+  database__connection__database: "ghostdb"
+  url: "http://blog.cloudmasa.com"

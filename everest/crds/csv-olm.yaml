@@ -1,0 +1,84 @@
+apiVersion: operators.coreos.com/v1alpha1
+kind: ClusterServiceVersion
+metadata:
+  name: percona-everest.v1.7.0
+  namespace: olm
+  labels:
+    operatorframework.io/arch: "amd64"
+    operatorframework.io/os: "linux"
+spec:
+  displayName: Percona Everest
+  description: Cloud-native DBaaS — manage PostgreSQL, MySQL, MongoDB with unified UI/API/CLI.
+  version: "1.7.0"
+  maturity: stable
+  provider:
+    name: Percona
+  maintainers:
+  - name: Percona
+    email: ops@percona.com
+  keywords:
+  - database
+  - dbaas
+  - kubernetes
+  - percona
+  - everest
+  links:
+  - name: GitHub
+    url: https://github.com/percona/everest
+  - name: Documentation
+    url: https://docs.percona.com/everest/
+  install:
+    strategy: deployment
+    spec:
+      permissions:
+        - serviceAccountName: everest-operator
+          rules:
+            - apiGroups: ["", "apps", "batch", "networking.k8s.io", "monitoring.coreos.com"]
+              resources: ["*"]
+              verbs: ["*"]
+      deployments:
+        - name: everest-operator-controller-manager
+          spec:
+            replicas: 1
+            selector:
+              matchLabels:
+                control-plane: controller-manager
+            template:
+              metadata:
+                labels:
+                  control-plane: controller-manager
+              spec:
+                serviceAccountName: everest-operator
+                containers:
+                  - name: manager
+                    image: percona/everest-operator:v1.7.0
+                    imagePullPolicy: IfNotPresent
+                    env:
+                      - name: WATCH_NAMESPACE
+                        value: ""
+                      - name: POD_NAME
+                        valueFrom:
+                          fieldRef:
+                            fieldPath: metadata.name
+                      - name: OPERATOR_NAME
+                        value: "everest-operator"
+
+  relatedImages:
+  - name: everest-operator
+    image: percona/everest-operator@sha256:<insert-sha>
+  - name: everest-ui
+    image: percona/everest-ui@sha256:<insert-sha>
+
+  customresourcedefinitions:
+    owned:
+      - name: databaseclusters.everest.percona.com
+        version: v1alpha1
+        kind: DatabaseCluster
+        description: Manages provisioning of DB clusters (PostgreSQL, MySQL, MongoDB).
+      - name: databaseengines.everest.percona.com
+        version: v1alpha1
+        kind: DatabaseEngine
+        description: Tracks installed Percona database operators.
+  selector:
+    matchLabels:
+      name: percona-everest

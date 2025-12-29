@@ -1,0 +1,195 @@
+# values.yaml for Percona Everest with:
+# - OLM CRDs auto-created
+# - InstallPlan auto-approval
+# - consistent namespace
+# - Kyverno compliance
+# - no duplicate resources
+
+compatibility:
+  openshift: false
+namespaceOverride: everest-system
+telemetry: true
+
+server:
+  image: percona/everest
+  resources:
+    limits:
+      cpu: 200m
+      memory: 500Mi
+    requests:
+      cpu: 100m
+      memory: 20Mi
+  service:
+    name: everest
+    type: ClusterIP
+    port: 8080
+  jwtKey: ""
+  rbac:
+    enabled: false
+    policy: |
+      g, admin, role:admin
+  oidc: {}
+  apiRequestsRateLimit: 100
+  initialAdminPassword: ""
+  env: []
+  securityContext:
+    runAsNonRoot: true
+    allowPrivilegeEscalation: false
+    privileged: false
+    capabilities:
+      drop: ["ALL"]
+
+operator:
+  image: percona/everest-operator
+  healthProbeAddr: ":8081"
+  metricsAddr: "127.0.0.1:8080"
+  enableLeaderElection: true
+  resources:
+    limits:
+      cpu: 500m
+      memory: 128Mi
+    requests:
+      cpu: 5m
+      memory: 64Mi
+  env: []
+  securityContext:
+    runAsNonRoot: true
+    allowPrivilegeEscalation: false
+    privileged: false
+    capabilities:
+      drop: ["ALL"]
+
+versionMetadataURL: "https://check.percona.com"
+
+upgrade:
+  preflightChecks: false
+
+olm:
+  install: true
+  crds:
+    create: true  # ✅ Ensures CRDs like clusterserviceversions are installed
+  namespace: everest-system  # ✅ Must be 'everest-system' for Everest chart compatibility
+  catalogSourceImage: percona/everest-catalog
+  image: quay.io/operator-framework/olm@sha256:1b6002156f568d722c29138575733591037c24b4bfabc67946f268ce4752c3e6
+
+  securityContext:
+    runAsNonRoot: true
+    allowPrivilegeEscalation: false
+    privileged: false
+
+  subscriptions:
+    - name: percona-xtradb-cluster-operator
+      namespace: everest
+      channel: stable
+      source: everest-catalog
+      sourceNamespace: everest-olm
+      installPlanApproval: Automatic
+
+    - name: percona-server-mongodb-operator
+      namespace: everest
+      channel: stable
+      source: everest-catalog
+      sourceNamespace: everest-olm
+      installPlanApproval: Automatic
+
+    - name: percona-postgresql-operator
+      namespace: everest
+      channel: stable-v2
+      source: everest-catalog
+      sourceNamespace: everest-olm
+      installPlanApproval: Automatic
+      config:
+        env:
+          - name: DISABLE_TELEMETRY
+            value: "true"
+
+  packageserver:
+    tls:
+      type: "helm"
+      caCert: ""
+      tlsCert: ""
+      tlsKey: ""
+
+dbNamespace:
+  enabled: true
+  namespaceOverride: everest
+
+kube-state-metrics:
+  enabled: true
+  namespaceOverride: "everest-monitoring"
+  selectorOverride:
+    app.kubernetes.io/name: kube-state-metrics
+  customLabels:
+    everest.percona.com/type: monitoring
+    app: kube-state-metrics
+  fullnameOverride: kube-state-metrics
+  volumes:
+    - name: customresourcestate-config
+      configMap:
+        name: customresource-config-ksm
+  volumeMounts:
+    - name: customresourcestate-config
+      mountPath: /etc/customresourcestate
+      readOnly: true
+  extraArgs:
+    - --custom-resource-state-config-file=/etc/customresourcestate/config
+  metricLabelsAllowlist:
+    - "pods=[app.kubernetes.io/component,app.kubernetes.io/instance,app.kubernetes.io/managed-by,app.kubernetes.io/name,app.kubernetes.io/part-of]"
+    - "persistentvolumeclaims=[app.kubernetes.io/component,app.kubernetes.io/instance,app.kubernetes.io/managed-by,app.kubernetes.io/name,app.kubernetes.io/part-of]"
+    - "jobs=[app.kubernetes.io/component,app.kubernetes.io/instance,app.kubernetes.io/managed-by,app.kubernetes.io/name,app.kubernetes.io/part-of]"
+  securityContext:
+    runAsNonRoot: true
+    allowPrivilegeEscalation: false
+    privileged: false
+
+createMonitoringResources: true
+
+ingress:
+  enabled: false
+  ingressClassName: ""
+  annotations: {}
+  hosts:
+    - host: chart-example.local
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+  tls: []
+
+monitoring:
+  enabled: true
+  namespaceOverride: everest-monitoring
+  fullnameOverride: vm-operator
+  crds:
+    enabled: false
+    plain: false
+  admissionWebhooks:
+    enabled: false
+  certManager:
+    enabled: false
+  securityContext:
+    runAsNonRoot: true
+    allowPrivilegeEscalation: false
+    privileged: false
+  labels:
+    app: vm-operator
+
+pmm:
+  enabled: false
+  nameOverride: pmm
+
+global:
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    runAsGroup: 3000
+    fsGroup: 2000
+    privileged: false
+    allowPrivilegeEscalation: false
+    seccompProfile:
+      type: "RuntimeDefault"
+    capabilities:
+      drop: ["ALL"]
+
+commonLabels:
+  app.kubernetes.io/managed-by: Helm
+  app.kubernetes.io/instance: everest

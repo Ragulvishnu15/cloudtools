@@ -1,0 +1,5 @@
+- job_name: 'jenkins'
+  metrics_path: /prometheus
+  static_configs:
+    - targets:
+        - 'jenkins.jenkins.svc.cluster.local:8080'

@@ -1,0 +1,89 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wordpress
+  namespace: wordpress
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: wordpress
+  template:
+    metadata:
+      labels:
+        app: wordpress
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        fsGroup: 33
+        fsGroupChangePolicy: "Always"
+      initContainers:
+        - name: volume-prep
+          image: busybox:1.35
+          command:
+            - sh
+            - -c
+            - |
+              sleep 5 && \
+              mkdir -p /var/www/html && \
+              chown -R 33:33 /var/www/html && \
+              chmod -R 775 /var/www/html
+          securityContext:
+            runAsUser: 0
+            runAsGroup: 0
+          volumeMounts:
+            - name: wordpress-data
+              mountPath: /var/www/html
+      containers:
+        - name: wordpress
+          image: wordpress:6.7-fpm
+          securityContext:
+            runAsUser: 33
+            runAsGroup: 33
+            allowPrivilegeEscalation: false
+          ports:
+            - containerPort: 9000  # FPM default port
+          env:
+            - name: WORDPRESS_DB_HOST
+              value: "mysql.wordpress.svc.cluster.local:3306"
+            - name: WORDPRESS_DB_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: wordpress-config
+                  key: WORDPRESS_DB_NAME
+            - name: WORDPRESS_DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: wordpress-secret
+                  key: WORDPRESS_DB_USER
+            - name: WORDPRESS_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: wordpress-secret
+                  key: WORDPRESS_DB_PASSWORD
+            - name: WORDPRESS_CONFIG_EXTRA
+              value: |
+                define('FS_METHOD', 'direct');
+                define('WP_HOME', 'http://docs.cloudmasa.com');
+                define('WP_SITEURL', 'http://docs.cloudmasa.com');
+          volumeMounts:
+            - name: wordpress-data
+              mountPath: /var/www/html
+          livenessProbe:
+            tcpSocket:
+              port: 9000
+            initialDelaySeconds: 180
+            periodSeconds: 10
+            timeoutSeconds: 10
+            failureThreshold: 10
+          readinessProbe:
+            tcpSocket:
+              port: 9000
+            initialDelaySeconds: 150
+            periodSeconds: 10
+            timeoutSeconds: 10
+            failureThreshold: 10
+      volumes:
+        - name: wordpress-data
+          persistentVolumeClaim:
+            claimName: wordpress-pvc

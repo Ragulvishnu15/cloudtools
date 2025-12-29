@@ -1,0 +1,26 @@
+wordpress:
+  image: "wordpress:6.7"
+  replicaCount: 1
+  service:
+    type: LoadBalancer
+    port: 80
+  storage:
+    size: 10Gi
+    storageClass: gp2
+
+mysql:
+  image: "mysql:8.0"
+  rootPassword: "rootpassword"
+  database: "wordpress"
+  user: "wp_user"
+  password: "wp_password"
+  service:
+    type: ClusterIP
+    port: 3306
+  storage:
+    size: 10Gi
+    storageClass: gp2
+
+ingress:
+  enabled: true
+  host: docs.cloudmasa.com

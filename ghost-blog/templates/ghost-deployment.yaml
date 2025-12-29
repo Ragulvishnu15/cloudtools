@@ -1,0 +1,85 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ghost
+  namespace: ghost-blog
+  labels:
+    app: ghost
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ghost
+  template:
+    metadata:
+      labels:
+        app: ghost
+    spec:
+      serviceAccountName: ghost-sa
+      automountServiceAccountToken: false
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        fsGroupChangePolicy: "Always"
+        seccompProfile:
+          type: RuntimeDefault
+      initContainers:
+        - name: init-permissions
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              mkdir -p /var/lib/ghost/content && \
+              chown -R 1000:1000 /var/lib/ghost/content && \
+              chmod -R 755 /var/lib/ghost/content
+          securityContext:
+            runAsUser: 0
+            runAsGroup: 0
+            allowPrivilegeEscalation: false
+          volumeMounts:
+            - name: ghost-storage
+              mountPath: /var/lib/ghost/content
+      containers:
+        - name: ghost
+          image: ghost:5.115.1
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 2368
+          env:
+            - name: url
+              value: "http://blog.cloudmasa.com"
+            - name: database__client
+              value: mysql
+            - name: database__connection__host
+              value: mysql
+            - name: database__connection__user
+              value: ghost
+            - name: database__connection__password
+              value: ghostpassword
+            - name: database__connection__database
+              value: ghostdb
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            runAsUser: 1000
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: ghost-storage
+              mountPath: /var/lib/ghost/content
+              readOnly: false
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 2368
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+      volumes:
+        - name: ghost-storage
+          persistentVolumeClaim:
+            claimName: ghost-pvc

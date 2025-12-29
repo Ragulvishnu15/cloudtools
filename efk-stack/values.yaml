@@ -1,0 +1,83 @@
+elasticsearch:
+  replicaCount: 1
+  image:
+    repository: "docker.elastic.co/elasticsearch/elasticsearch"
+    tag: "7.17.3"
+    pullPolicy: Always
+  resources:
+    requests:
+      memory: "2Gi"
+      cpu: "500m"
+    limits:
+      memory: "4Gi"
+      cpu: "1"
+  persistence:
+    enabled: true
+    size: "10Gi"
+    storageClass: "standard"
+  securityContext:
+    fsGroup: 1000
+    runAsUser: 1000
+    xpack.security.enabled: false
+xpack.security.http.ssl.enabled: false
+
+
+fluentbit:
+  image:
+    repository: fluent/fluent-bit
+    tag: 2.2.2
+    pullPolicy: Always
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 100Mi
+    limits:
+      cpu: 200m
+      memory: 200Mi
+
+  config:
+    inputs: |
+      [INPUT]
+          Name tail
+          Path /var/log/containers/*.log
+          Parser docker
+          Tag kube.*
+          DB /var/log/flb_kube.db
+          Mem_Buf_Limit 5MB
+          Skip_Long_Lines On
+    outputs: |
+      [OUTPUT]
+          Name es
+          Match *
+          Host elasticsearch-service
+          Port 9200
+          Index fluentbit
+
+
+kibana:
+  replicaCount: 1
+  image:
+    repository: docker.elastic.co/kibana/kibana
+    tag: 7.17.3  # Fixed tag to avoid "latest" issue
+    pullPolicy: Always
+  resources:
+    limits:
+      memory: "2Gi"
+      cpu: "1"
+    requests:
+      memory: "1Gi"
+      cpu: "500m"
+  persistence:
+    enabled: true
+    size: 1Gi
+    accessMode: ReadWriteOnce
+    storageClass: "gp2"
+  service:
+    type: LoadBalancer
+    port: 5601
+  ingress:
+    enabled: false
+  securityContext:
+    runAsUser: 1000
+    fsGroup: 1000

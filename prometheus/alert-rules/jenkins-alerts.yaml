@@ -1,0 +1,90 @@
+groups:
+- name: jenkins-alerts
+  rules:
+  
+  # Job Count Alert
+  - alert: HighJobCount
+    expr: jenkins_job_count_value > 1000
+    for: 10m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High number of Jenkins jobs ({{ $value }})"
+      description: "The total number of Jenkins jobs has exceeded 1000, which may impact performance."
+
+  # Failed Plugins Alert
+  - alert: FailedPlugins
+    expr: jenkins_plugins_failed > 0
+    for: 5m
+    labels:
+      severity: critical
+    annotations:
+      summary: "Failed Jenkins plugins detected ({{ $value }})"
+      description: "There are {{ $value }} failed Jenkins plugins that need attention."
+
+  # Unstable Runs Alert
+  - alert: HighUnstableRuns
+    expr: jenkins_runs_unstable_total > 5
+    for: 1h
+    labels:
+      severity: warning
+    annotations:
+      summary: "High number of unstable runs ({{ $value }})"
+      description: "There have been {{ $value }} unstable runs in Jenkins, which may indicate test reliability issues."
+
+  # CPU Usage Alerts
+  - alert: HighSystemCPU
+    expr: system_cpu_load_x100_window_15m{quantile="0.95"} > 80
+    for: 15m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High system CPU usage ({{ $value }}%)"
+      description: "System CPU usage is above 80% for 15 minutes (95th percentile)."
+
+  - alert: HighJVMCPU
+    expr: vm_cpu_load_x100_window_15m{quantile="0.95"} > 80
+    for: 15m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High JVM CPU usage ({{ $value }}%)"
+      description: "JVM CPU usage is above 80% for 15 minutes (95th percentile)."
+
+  # Memory Usage Alerts
+  - alert: HighMemoryUsage
+    expr: vm_memory_total_used_window_1h{quantile="0.95"} / vm_memory_total_bytes * 100 > 80
+    for: 30m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High memory usage ({{ $value }}%)"
+      description: "Total JVM memory usage is above 80% for 30 minutes (95th percentile)."
+
+  - alert: HighOldGenUsage
+    expr: vm_memory_pools_G1_Old_Gen_used_window_5m{quantile="0.95"} / vm_memory_pools_G1_Old_Gen_max_bytes * 100 > 80
+    for: 15m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High Old Gen memory usage ({{ $value }}%)"
+      description: "Old Gen memory usage is above 80% for 15 minutes (95th percentile)."
+
+  # Build Failure Alerts
+  - alert: RecentBuildFailures
+    expr: rate(default_jenkins_builds_failed_build_count_total[5m]) > 0.1
+    for: 5m
+    labels:
+      severity: critical
+    annotations:
+      summary: "High build failure rate detected"
+      description: "Build failure rate is above 0.1 failures per minute over the last 5 minutes."
+
+  - alert: JobBuildFailure
+    expr: increase(default_jenkins_builds_failed_build_count_total[1h]) > 5
+    for: 0m
+    labels:
+      severity: warning
+    annotations:
+      summary: "Job {{ $labels.job_name }} has multiple failures"
+      description: "Job {{ $labels.job_name }} has had {{ $value }} failures in the last hour."

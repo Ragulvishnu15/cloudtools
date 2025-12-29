@@ -1,0 +1,5 @@
+apiVersion: v2
+name: elastic-stack
+description: A Helm chart for deploying Elasticsearch, Fluent Bit, and Kibana
+version: 0.1.0
+appVersion: "8.13.4"

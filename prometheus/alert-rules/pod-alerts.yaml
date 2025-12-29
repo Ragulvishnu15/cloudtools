@@ -1,0 +1,20 @@
+groups:
+- name: pod-alerts
+  rules:
+  - alert: PodCrashLooping
+    expr: rate(kube_pod_container_status_restarts_total[5m]) > 0
+    for: 5m
+    labels:
+      severity: critical
+    annotations:
+      summary: "Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} is crash looping"
+      description: "Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} has restarted {{ $value }} times in the last 5 minutes"
+
+  - alert: PodNotReady
+    expr: sum by (namespace, pod) (kube_pod_status_ready{condition="false"}) > 0
+    for: 5m
+    labels:
+      severity: critical
+    annotations:
+      summary: "Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} is not ready"
+      description: "Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} has been not ready for more than 5 minutes"

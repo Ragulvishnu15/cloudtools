@@ -1,0 +1,59 @@
+{{- if (ne (include "everest.namespace" .) "everest-system") }}
+{{ fail "Namespace cannot be set to anything other than everest-system" }}
+{{- end }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: everest-server
+  namespace: {{ include  "everest.namespace" . }}
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: everest-server
+      app.kubernetes.io/component: everest-server
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: everest-server
+        app.kubernetes.io/component: everest-server
+    spec:
+      serviceAccountName: everest-admin
+      automountServiceAccountToken: true
+      volumes:
+      - name: jwt-secret
+        secret:
+          secretName: everest-jwt
+      containers:
+      - name: everest
+        image: {{ .Values.server.image }}:{{ .Chart.Version }}
+        ports:
+          - containerPort: 8080
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8080
+          initialDelaySeconds: 300
+          periodSeconds: 15
+        resources: {{ toYaml .Values.server.resources | nindent 12 }}
+        volumeMounts:
+        - name: jwt-secret
+          mountPath: /etc/jwt
+        env:
+        {{- if hasKey .Values.server "apiRequestsRateLimit" }}
+        - name: API_REQUESTS_RATE_LIMIT
+          value: "{{ .Values.server.apiRequestsRateLimit }}"
+        {{- end }}
+        - name: VERSION_SERVICE_URL
+          value: {{ (include "everest.versionMetadataURL" .) }}
+        {{- if .Values.server.env }}
+        {{- toYaml .Values.server.env | nindent 8 }}
+        {{- end }}

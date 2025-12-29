@@ -1,0 +1,20 @@
+groups:
+- name: cluster-alerts
+  rules:
+  - alert: ClusterCPUOvercommit
+    expr: sum(kube_pod_container_resource_requests_cpu_cores) / sum(kube_node_status_allocatable_cpu_cores) > 1.5
+    for: 15m
+    labels:
+      severity: warning
+    annotations:
+      summary: "Cluster CPU is overcommitted"
+      description: "Cluster CPU requests are {{ $value }} of allocatable CPU"
+
+  - alert: ClusterMemoryOvercommit
+    expr: sum(kube_pod_container_resource_requests_memory_bytes) / sum(kube_node_status_allocatable_memory_bytes) > 1.5
+    for: 15m
+    labels:
+      severity: warning
+    annotations:
+      summary: "Cluster memory is overcommitted"
+      description: "Cluster memory requests are {{ $value }} of allocatable memory"

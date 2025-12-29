@@ -1,0 +1,96 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-kibana
+  namespace: efk
+  labels:
+    app: kibana
+    {{- include "efk-stack.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.kibana.replicaCount }}
+  selector:
+    matchLabels:
+      app: kibana
+  template:
+    metadata:
+      labels:
+        app: kibana
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        fsGroup: {{ .Values.kibana.securityContext.fsGroup }}
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      initContainers:
+        - name: fix-permissions
+          image: alpine:3.18
+          imagePullPolicy: Always
+          command: ["sh", "-c", "mkdir -p /mnt/data && chown -R 1000:1000 /mnt/data"]
+          volumeMounts:
+            - name: kibana-data
+              mountPath: /mnt/data
+          resources:
+            requests:
+              memory: "32Mi"
+              cpu: "10m"
+            limits:
+              memory: "64Mi"
+              cpu: "50m"
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+      containers:
+        - name: kibana
+          image: "{{ .Values.kibana.image.repository }}:{{ .Values.kibana.image.tag | default "8.13.4" }}"
+          imagePullPolicy: "{{ .Values.kibana.image.pullPolicy }}"
+          ports:
+            - containerPort: 5601
+          env:
+            - name: ELASTICSEARCH_HOSTS
+              value: "http://{{ .Release.Name }}-elasticsearch:9200"
+          volumeMounts:
+            - name: kibana-data
+              mountPath: /usr/share/kibana/data
+          livenessProbe:
+            httpGet:
+              path: /status
+              port: 5601
+            initialDelaySeconds: 120
+            periodSeconds: 15
+            timeoutSeconds: 10
+            failureThreshold: 5
+          readinessProbe:
+            httpGet:
+              path: /status
+              port: 5601
+            initialDelaySeconds: 90
+            periodSeconds: 10
+            timeoutSeconds: 10
+            failureThreshold: 5
+          resources:
+            requests:
+              cpu: "{{ .Values.kibana.resources.requests.cpu }}"
+              memory: "{{ .Values.kibana.resources.requests.memory }}"
+            limits:
+              cpu: "{{ .Values.kibana.resources.limits.cpu }}"
+              memory: "{{ .Values.kibana.resources.limits.memory }}"
+          securityContext:
+            runAsUser: {{ .Values.kibana.securityContext.runAsUser }}
+            runAsGroup: {{ .Values.kibana.securityContext.fsGroup }}
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+      volumes:
+        - name: kibana-data
+          persistentVolumeClaim:
+            claimName: {{ .Release.Name }}-kibana-pvc

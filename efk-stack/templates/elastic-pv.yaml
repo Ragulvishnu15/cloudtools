@@ -1,0 +1,18 @@
+{{- if .Values.elasticsearch.persistence.enabled }}
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: {{ .Release.Name }}-elasticsearch-pv
+  namespace: efk
+  labels:
+    app: elasticsearch
+spec:
+  capacity:
+    storage: {{ .Values.elasticsearch.persistence.size }}
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: {{ .Values.elasticsearch.persistence.storageClass }}
+  hostPath:
+    path: /data/elasticsearch
+{{- end }}

@@ -1,0 +1,13 @@
+apiVersion: v2
+appVersion: 0.0.3
+description: A library chart for Everest containing common resources.
+maintainers:
+- email: mayank.shah@percona.com
+  name: mayankshah1607
+- email: oksana.grishchenko@percona.com
+  name: oksana-grishchenko
+- email: diogo.recharte@percona.com
+  name: recharte
+name: common
+type: library
+version: 0.0.16

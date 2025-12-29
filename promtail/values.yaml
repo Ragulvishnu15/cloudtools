@@ -1,0 +1,22 @@
+loki:
+  # Point to the Loki gateway, not the distributor
+  url: http://loki-loki-distributed-distributor.loki.svc.cluster.local:3100/loki/api/v1/push
+resources: {}
+
+tolerations: []
+
+nodeSelector: {}
+
+rbac:
+  create: true
+  serviceAccountName: promtail
+
+podLabels: {}
+
+logPaths:
+  - path: /var/log/*.log
+    labels:
+      job: varlogs
+
+serviceMonitor:
+  enabled: false

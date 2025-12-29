@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: loki
+  namespace: promtail   # Replace with your Promtail namespace
+spec:
+  type: ExternalName
+  externalName: loki-loki-distributed-query-frontend.loki.svc.cluster.local  # Full FQDN of Loki service

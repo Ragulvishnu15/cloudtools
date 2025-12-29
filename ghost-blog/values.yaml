@@ -1,0 +1,29 @@
+ghost:
+  image: ghost:5.115.1
+  storage: 10Gi
+  host: blog.cloudmasa.com
+  dbUser: ghost
+  dbPassword: ghostpassword
+  dbName: ghostdb
+  dbHost: ghost-mysql
+  dbPort: 3306
+  env:
+    url: "http://blog.cloudmasa.com"  # This should be here
+
+mysql:
+  image: mysql:8.0.41
+  storage: 10Gi
+  rootPassword: rootpassword
+  database: ghostdb
+  user: ghost
+  password: ghostpassword
+
+ingress:
+  enabled: true
+  hostname: blog.cloudmasa.com
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+  tls: true
+
+storageClass: gp3-csi

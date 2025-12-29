@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: additional-scrape-configs
+  namespace: {{ .Release.Namespace }}
+type: Opaque
+stringData:
+  jenkins-scrape-config.yaml: |-
+{{- with .Files.Get "jenkins-scrape-config.yaml" }}
+{{ . | indent 4 }}
+{{- end }}
