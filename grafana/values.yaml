@@ -7,7 +7,7 @@ global:
   # Can be templated.
   # global:
   #   imagePullSecrets:
-  #   - name: pullSecret1
+  #   - name: pullSecret1 
   #   - name: pullSecret2
   # or
   # global:
