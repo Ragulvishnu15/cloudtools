@@ -306,7 +306,7 @@ config:
   receivers:
     - name: 'email-notifications'
       email_configs:
-        - to: 'ragulvishnu.r@gmail.com'
+        - to: 'ragulvishnu.r3@gmail.com'
           send_resolved: true
 
 ## Monitors ConfigMap changes and POSTs to a URL
