@@ -1415,3 +1415,9 @@ prometheus-pushgateway:
   # Optional service annotations
   serviceAnnotations:
     prometheus.io/probe: pushgateway
+# === WhatsApp Alert Integration (Twilio) ===
+twilio:
+  accountSid: "REPLACE_WITH_SID"    # ← PLACEHOLDER ONLY - DO NOT COMMIT REAL CREDENTIALS
+  authToken: "REPLACE_WITH_TOKEN"   # ← PLACEHOLDER ONLY - DO NOT COMMIT REAL CREDENTIALS
+  whatsappFrom: "whatsapp:+14155238886"
+  whatsappTo: "whatsapp:+919876543210"
