@@ -287,29 +287,114 @@ configAnnotations: {}
   # vault.security.banzaicloud.io/vault-path: "kubernetes"
   ## Example for inject secret
   # slack_api_url: '${vault:secret/data/slack-hook-alerts#URL}'
-# Remove the hardcoded secret from your values.yaml
+# ===== SECRET SECTION (for SMTP password) =====
 secret:
-  # This section should be empty or removed completely
+  smtpAuthPassword: "xmgksxlyipubymls"  # ← Your 16-char Gmail App Password
 
+# ===== ALERTMANAGER CONFIGURATION =====
 config:
   global:
     smtp_smarthost: 'smtp.gmail.com:587'
     smtp_from: 'ragulvishnu.r3@gmail.com'
     smtp_auth_username: 'ragulvishnu.r3@gmail.com'
-    smtp_require_tls: true
-    # Reference the secret properly
     smtp_auth_password: '{{ .Values.secret.smtpAuthPassword }}'
+    smtp_require_tls: true
+    smtp_hello: 'localhost'  # REQUIRED for Gmail
+    
   route:
     receiver: 'email-notifications'
+    group_by: ['alertname']
+    group_wait: 30s
+    group_interval: 5m
+    repeat_interval: 3h
+    
   receivers:
     - name: 'email-notifications'
       email_configs:
         - to: 'ragulvishnu.r3@gmail.com'
           send_resolved: true
+          html: '{{ template "email.html" . }}'
+          headers:
+            Subject: '{{ template "email.default.subject" . }}'
+    
+  # Path where Alertmanager loads templates (DO NOT put template content here!)
+  templates:
+    - '/etc/alertmanager/templates/*.tmpl'
 
-## Monitors ConfigMap changes and POSTs to a URL
-## Ref: https://github.com/prometheus-operator/prometheus-operator/tree/main/cmd/prometheus-config-reloader
-##
+# ===== EMAIL TEMPLATES (CORRECT STRUCTURE) =====
+# This is a TOP-LEVEL field (outside "config") that creates template files
+templates:
+  email.tmpl: |
+    {{ define "email.default.subject" }}[{{ .Status | toUpper }}{{ if eq .Status "firing" }}:{{ .Alerts.Firing | len }}{{ end }}] {{ .CommonLabels.alertname }}{{ end }}
+    
+    {{ define "email.html" }}
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+      <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 800px; margin: 0 auto; padding: 20px; }
+        .alert-container { background: #f8f9fa; border-radius: 8px; padding: 20px; margin-bottom: 20px; }
+        .alert-firing { border-left: 5px solid #dc3545; background-color: #fff5f5; }
+        .alert-resolved { border-left: 5px solid #28a745; background-color: #f0fdf4; }
+        .summary { font-size: 18px; font-weight: bold; margin-bottom: 10px; color: #dc3545; }
+        .resolved-summary { color: #28a745; }
+        .labels { display: flex; flex-wrap: wrap; gap: 8px; margin: 15px 0; }
+        .label { background: #e9ecef; padding: 4px 8px; border-radius: 4px; font-size: 14px; }
+        .annotations { margin: 15px 0; padding: 15px; background: #fff; border-radius: 4px; border: 1px solid #dee2e6; }
+        .timestamp { color: #6c757d; font-size: 14px; margin-top: 20px; }
+        hr { border: 0; border-top: 1px solid #eee; margin: 25px 0; }
+      </style>
+    </head>
+    <body>
+      <h1>🔔 Alertmanager Notification</h1>
+      
+      {{ if .Alerts.Firing }}
+        <h2>🚨 Firing Alerts ({{ .Alerts.Firing | len }})</h2>
+        {{ range .Alerts.Firing }}
+          <div class="alert-container alert-firing">
+            <div class="summary">{{ .Annotations.summary }}</div>
+            <div class="labels">
+              {{ range .Labels.SortedPairs }}
+                <span class="label"><strong>{{ .Name }}:</strong> {{ .Value }}</span>
+              {{ end }}
+            </div>
+            <div class="annotations">
+              {{ if .Annotations.description }}
+                <p><strong>Description:</strong> {{ .Annotations.description }}</p>
+              {{ end }}
+              {{ if .GeneratorURL }}
+                <p><a href="{{ .GeneratorURL }}">View in Prometheus</a></p>
+              {{ end }}
+            </div>
+            <div class="timestamp">Firing since: {{ .StartsAt.Format "2006-01-02 15:04:05 UTC" }}</div>
+          </div>
+        {{ end }}
+      {{ end }}
+      
+      {{ if .Alerts.Resolved }}
+        <h2>✅ Resolved Alerts ({{ .Alerts.Resolved | len }})</h2>
+        {{ range .Alerts.Resolved }}
+          <div class="alert-container alert-resolved">
+            <div class="summary resolved-summary">{{ .Annotations.summary }} (RESOLVED)</div>
+            <div class="labels">
+              {{ range .Labels.SortedPairs }}
+                <span class="label"><strong>{{ .Name }}:</strong> {{ .Value }}</span>
+              {{ end }}
+            </div>
+            <div class="timestamp">Resolved at: {{ .EndsAt.Format "2006-01-02 15:04:05 UTC" }}</div>
+          </div>
+        {{ end }}
+      {{ end }}
+      
+      <hr>
+      <div class="timestamp">
+        Sent by Alertmanager at {{ now.Format "2006-01-02 15:04:05 UTC" }}<br>
+        Cluster: {{ .ExternalURL }}
+      </div>
+    </body>
+    </html>
+    {{ end }}
 configmapReload:
   ## If false, the configmap-reload container will not be deployed
   ##
