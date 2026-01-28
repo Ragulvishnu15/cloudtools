@@ -1,13 +1,13 @@
 apiVersion: v1
 kind: Namespace
-meta
+metadata
   name: monitoring-tools
   annotations:
     argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
 ---
 apiVersion: v1
 kind: Secret
-meta
+metadata
   name: twilio-credentials
   namespace: monitoring-tools
   annotations:
@@ -21,7 +21,7 @@ stringData:
 ---
 apiVersion: apps/v1
 kind: Deployment
-meta
+metadata
   name: whatsapp-webhook-receiver
   namespace: monitoring-tools
   annotations:
@@ -32,7 +32,7 @@ spec:
     matchLabels:
       app: whatsapp-webhook-receiver
   template:
-    meta
+    metadata
       labels:
         app: whatsapp-webhook-receiver
     spec:
@@ -64,7 +64,7 @@ spec:
 ---
 apiVersion: v1
 kind: Service
-meta
+metadata
   name: whatsapp-webhook-receiver
   namespace: monitoring-tools
   annotations:
