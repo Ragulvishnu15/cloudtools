@@ -5,20 +5,6 @@ metadata:
   annotations:
     argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
 ---
-apiVersion: v1
-kind: Secret
-metadata:
-  name: twilio-credentials
-  namespace: monitoring-tools
-  annotations:
-    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
-type: Opaque
-stringData:
-  TWILIO_ACCOUNT_SID: "{{ .Values.twilio.accountSid }}"
-  TWILIO_AUTH_TOKEN: "{{ .Values.twilio.authToken }}"
-  TWILIO_WHATSAPP_FROM: "{{ .Values.twilio.whatsappFrom }}"
-  WHATSAPP_TO: "{{ .Values.twilio.whatsappTo }}"
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -43,7 +29,7 @@ spec:
             - containerPort: 3000
           envFrom:
             - secretRef:
-                name: twilio-credentials 
+                name: twilio-credentials
           command: ["/bin/sh", "-c"]
           args:
             - |
