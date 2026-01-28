@@ -292,23 +292,36 @@ secret:
   smtpAuthPassword: "xmgksxlyipubymls"  # ← Your 16-char Gmail App Password
 
 # ===== ALERTMANAGER CONFIGURATION =====
+# ===== ALERTMANAGER CONFIGURATION =====
 config:
   global:
+    resolve_timeout: 5m
     smtp_smarthost: 'smtp.gmail.com:587'
     smtp_from: 'ragulvishnu.r3@gmail.com'
     smtp_auth_username: 'ragulvishnu.r3@gmail.com'
     smtp_auth_password: '{{ .Values.secret.smtpAuthPassword }}'
     smtp_require_tls: true
-    smtp_hello: 'localhost'  # REQUIRED for Gmail
-    
+    smtp_hello: 'localhost'
+
   route:
-    receiver: 'email-notifications'
     group_by: ['alertname']
     group_wait: 30s
     group_interval: 5m
     repeat_interval: 3h
-    
+    # This is the default receiver if no other routes match
+    receiver: 'whatsapp-webhook'
+    # Optional: If you want both, you can add routes here
+    routes:
+      - receiver: 'email-notifications'
+        match_re:
+          severity: critical
+
   receivers:
+    - name: 'whatsapp-webhook'
+      webhook_configs:
+        - url: 'http://whatsapp-webhook-receiver.monitoring-tools.svc.cluster.local:80/webhook'
+          send_resolved: true
+
     - name: 'email-notifications'
       email_configs:
         - to: 'ragulvishnu.r3@gmail.com'
@@ -316,8 +329,7 @@ config:
           html: '{{ template "email.html" . }}'
           headers:
             Subject: '{{ template "email.default.subject" . }}'
-    
-  # Path where Alertmanager loads templates (DO NOT put template content here!)
+
   templates:
     - '/etc/alertmanager/templates/*.tmpl'
 
