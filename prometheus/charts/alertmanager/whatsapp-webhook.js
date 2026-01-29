@@ -24,7 +24,7 @@ app.post('/webhook', async (req, res) => {
 
     const fullMsg = `🔔 Prometheus Alert\n\n${messages.join('\n')}`;
     const to = process.env.WHATSAPP_TO;
-    const from = process.env.WHATSAPP_FROM; // ✅ Matches your secret key
+    const from = process.env.WHATSAPP_FROM; // Must match your secret key
 
     await client.messages.create({ body: fullMsg, from, to });
     console.log(`Sent to ${to}: ${fullMsg}`);
