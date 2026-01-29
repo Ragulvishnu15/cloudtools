@@ -288,8 +288,12 @@ configAnnotations: {}
   ## Example for inject secret
   # slack_api_url: '${vault:secret/data/slack-hook-alerts#URL}'
 # ===== SECRET SECTION (for SMTP password) =====
-secret:
-  smtpAuthPassword: "xmgksxlyipubymls"
+extraEnv:
+  - name: SMTP_AUTH_PASSWORD
+    valueFrom:
+      secretKeyRef:
+        name: alertmanager-smtp
+        key: smtp-password
 
 # ===== CORRECT STRUCTURE FOR ALERTMANAGER CONFIG =====
 alertmanager:
@@ -299,9 +303,10 @@ alertmanager:
       smtp_smarthost: 'smtp.gmail.com:587'
       smtp_from: 'ragulvishnu.r3@gmail.com'
       smtp_auth_username: 'ragulvishnu.r3@gmail.com'
-      smtp_auth_password: '{{ .Values.secret.smtpAuthPassword }}'
+      smtp_auth_password: '${SMTP_AUTH_PASSWORD}'   # ✅ Alertmanager supports this
       smtp_require_tls: true
       smtp_hello: 'localhost'
+    # ... rest of your config
     route:
       group_by: ['alertname']
       group_wait: 30s
@@ -432,10 +437,7 @@ configmapReload:
     #   mountPath: /usr/share/extras
     #   readOnly: true
 
-  ## Optionally specify extra environment variables to add to alertmanager container
-  extraEnv: []
-    # - name: FOO
-    #   value: BAR
+   
 
   securityContext: {}
     # capabilities:
