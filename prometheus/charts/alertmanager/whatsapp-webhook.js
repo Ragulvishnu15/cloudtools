@@ -1,3 +1,4 @@
+// https://raw.githubusercontent.com/Ragulvishnu15/cloudtools/main/prometheus/charts/alertmanager/whatsapp-webhook.js
 const express = require('express');
 const twilio = require('twilio');
 const app = express();
@@ -24,7 +25,7 @@ app.post('/webhook', async (req, res) => {
 
     const fullMsg = `🔔 Prometheus Alert\n\n${messages.join('\n')}`;
     const to = process.env.WHATSAPP_TO;
-    const from = process.env.WHATSAPP_FROM; // Must match your secret key
+    const from = process.env.WHATSAPP_FROM; // ← Must match your secret key
 
     await client.messages.create({ body: fullMsg, from, to });
     console.log(`Sent to ${to}: ${fullMsg}`);
