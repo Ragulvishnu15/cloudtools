@@ -446,8 +446,7 @@ configmapReload:
     # runAsNonRoot: true
     # runAsGroup: 65534
 
-templates: {}
-#   alertmanager.tmpl: |-
+ 
 
 ## Optionally specify extra list of additional volumeMounts
 extraVolumeMounts: []
