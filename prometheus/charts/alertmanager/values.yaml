@@ -289,49 +289,43 @@ configAnnotations: {}
   # slack_api_url: '${vault:secret/data/slack-hook-alerts#URL}'
 # ===== SECRET SECTION (for SMTP password) =====
 secret:
-  smtpAuthPassword: "xmgksxlyipubymls"  # ← Your 16-char Gmail App Password
+  smtpAuthPassword: "xmgksxlyipubymls"
 
-# ===== ALERTMANAGER CONFIGURATION =====
-# ===== ALERTMANAGER CONFIGURATION =====
-config:
-  global:
-    resolve_timeout: 5m
-    smtp_smarthost: 'smtp.gmail.com:587'
-    smtp_from: 'ragulvishnu.r3@gmail.com'
-    smtp_auth_username: 'ragulvishnu.r3@gmail.com'
-    smtp_auth_password: '{{ .Values.secret.smtpAuthPassword }}'
-    smtp_require_tls: true
-    smtp_hello: 'localhost'
-
-  route:
-    group_by: ['alertname']
-    group_wait: 30s
-    group_interval: 5m
-    repeat_interval: 3h
-    # This is the default receiver if no other routes match
-    receiver: 'whatsapp-webhook'
-    # Optional: If you want both, you can add routes here
-    routes:
-      - receiver: 'email-notifications'
-        match_re:
-          severity: critical
-
-  receivers:
-    - name: 'whatsapp-webhook'
-      webhook_configs:
-        - url: 'http://whatsapp-webhook-receiver.monitoring-tools.svc.cluster.local:80/webhook'
-          send_resolved: true
-
-    - name: 'email-notifications'
-      email_configs:
-        - to: 'ragulvishnu.r3@gmail.com'
-          send_resolved: true
-          html: '{{ template "email.html" . }}'
-          headers:
-            Subject: '{{ template "email.default.subject" . }}'
-
-  templates:
-    - '/etc/alertmanager/templates/*.tmpl'
+# ===== CORRECT STRUCTURE FOR ALERTMANAGER CONFIG =====
+alertmanager:
+  config:
+    global:
+      resolve_timeout: 5m
+      smtp_smarthost: 'smtp.gmail.com:587'
+      smtp_from: 'ragulvishnu.r3@gmail.com'
+      smtp_auth_username: 'ragulvishnu.r3@gmail.com'
+      smtp_auth_password: '{{ .Values.secret.smtpAuthPassword }}'
+      smtp_require_tls: true
+      smtp_hello: 'localhost'
+    route:
+      group_by: ['alertname']
+      group_wait: 30s
+      group_interval: 5m
+      repeat_interval: 3h
+      receiver: 'whatsapp-webhook'
+      routes:
+        - receiver: 'email-notifications'
+          match_re:
+            severity: critical
+    receivers:
+      - name: 'whatsapp-webhook'
+        webhook_configs:
+          - url: 'http://whatsapp-webhook-receiver.monitoring-tools.svc.cluster.local:80/webhook'
+            send_resolved: true
+      - name: 'email-notifications'
+        email_configs:
+          - to: 'ragulvishnu.r3@gmail.com'
+            send_resolved: true
+            html: '{{ template "email.html" . }}'
+            headers:
+              Subject: '{{ template "email.default.subject" . }}'
+    templates:
+      - '/etc/alertmanager/templates/*.tmpl'
 
 # ===== EMAIL TEMPLATES (CORRECT STRUCTURE) =====
 # This is a TOP-LEVEL field (outside "config") that creates template files
