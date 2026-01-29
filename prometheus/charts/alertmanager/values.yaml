@@ -462,9 +462,7 @@ extraVolumes: []
   #   emptyDir: {}
 
 ## Optionally specify extra environment variables to add to alertmanager container
-extraEnv: []
-  # - name: FOO
-  #   value: BAR
+ 
 
 testFramework:
   enabled: false
